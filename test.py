@@ -2,40 +2,73 @@ import sys
 import os
 import json
 
-directory = "data"
-if not os.path.exists(directory):
-    os.makedirs(directory)
-
-if not os.path.isfile("data/data.json"):
-    f = open("data/data.json", "w")
-    data2 = {
-        "last_id": 0
-    }
-    f.write(json.dumps(data2))
-    f.close()
-
-f = open("data/data.json", "r")
-r = f.read()
-data = json.loads(r)
-f.close()
-
-
-if sys.argv[1] == "list":
-    print("lista projektów: ")
-    print("a"+chr(9)+"b")
-    print("ab"+chr(9)+"ccc")
-elif sys.argv[1] == "new_project":
-    project = {
-        "name": sys.argv[2]
-    }
-    directory = "data/"+str("{:03d}".format(data["last_id"]+1))
+def check_directory(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
-    f = open(directory+"/info.json", "w")
-    f.write(json.dumps(project))
+
+def add_file(directory, o):
+    if not os.path.isfile(directory):
+        f = open(directory, "w")
+        f.write(json.dumps(o))
+        f.close()
+
+def read(directory):
+    f = open(directory, "r")
+    r = f.read()
     f.close()
+    return r
+
+def write(directory, a):
+    f = open(directory, "w")
+    f.write(a)
+    f.close()
+
+def formatid(number):
+    return str("{:03d}".format(number))
+
+
+# Check files
+check_directory("data")
+add_file("data/data.json", { "last_id": 0 })
+
+#Data from files
+data = json.loads(read("data/data.json"))
+
+#Commands
+
+if sys.argv[1] == "list": #list of projects
+    print("lista projektów: ")
+    for i in range(1, data["last_id"]+1):
+        project_directory = "data/" + formatid(i)
+        project_id = formatid(i)
+        if os.path.exists(project_directory):
+            project_data = json.loads(read(project_directory + "/info.json"))
+            print(project_id + chr(9)+project_data["name"])
+elif sys.argv[1] == "new_project": #new project
+    project = {
+        "name": sys.argv[2],
+        "tasks": []
+    }
+    directory = "data/"+formatid(data["last_id"]+1)
+    check_directory(directory)
+
+    write(directory+"/info.json", json.dumps(project))
+
     data["last_id"]+=1
-    f = open("data/data.json", "w")
-    f.write(json.dumps(data))
-    f.close()
+
+    write("data/data.json", json.dumps(data))
+
     print("Created project "+project["name"])
+elif sys.argv[1] == "add_task":
+    task_project_id = sys.argv[2]
+    task_name = sys.argv[3]
+    project_directory = "data/" + formatid(int(task_project_id))
+    project_data = json.loads(read(project_directory + "/info.json"))
+    try:
+        project_data["tasks"].append({"id": 1, "name": "a"})
+    except:
+        project_data.append({"tasks": []})
+        print("Dodano")
+        project_data["tasks"].append({"id": 1, "name": "a"})
+    write(project_directory + "/info.json", json.dumps(project_data))
+    
