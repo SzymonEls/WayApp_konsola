@@ -3,7 +3,7 @@ import os
 import json
 from datetime import datetime
 
-program_path = "C:\\Users\\SzymonPC\\Documents\\!Repozytoria\\WayApp_konsola"
+program_path = "C:\\Users\\Szymon\\Desktop\\WayApp_konsola"
 
 class System:
     #tests
@@ -42,6 +42,34 @@ class System:
         if not os.path.exists(directory):
             os.makedirs(directory)
 
+    #fix
+    def fix_project(id):
+        if not os.path.exists(program_path):
+            print("Błąd ścieżki programu")
+        
+        project_directory = program_path + "\\data\\" + System.formatid(int(id))
+
+        project_default = json.dumps({ "name": "Project", "tasks": [], "tags": [] })
+        default_values = {"name": "", "tasks": [], "tags": []}
+        if not os.path.exists(project_directory + "\\info.json"):
+            write(project_directory + "\\info.json", project_default)
+        
+        try:
+            project_data = json.loads(System.read_file(project_directory + "\\info.json"))
+        except:
+            write(project_directory + "\\info.json", project_default)
+        
+        project_data = json.loads(System.read_file(project_directory + "\\info.json"))
+
+        for element in ["name", "tasks", "tags"]:
+            try:
+                test = project_data[element]
+            except:
+                project_data[element] = default_values[element]
+                write(project_directory + "\\info.json", json.dumps(project_data))
+
+        
+
 class Project:
     def __init__(self, name):
         self.name = name
@@ -49,10 +77,10 @@ class Project:
         self.tags = []
         self.saved = False
     def find(self, id):
-        self.directory = program_path + "\\data\\" + System.formatid(id)
+        self.directory = program_path + "\\data\\" + System.formatid(int(id))
         project_data = json.loads(read(self.directory + "\\info.json"))
         self.name = project_data['name']
-        self.tasks = project_data['tasks']
+        self.tasks = project_data['tasks'] or []
         self.tags = project_data['tags']
         self.id = id
         self.saved = True
@@ -64,7 +92,7 @@ class Project:
             if os.path.exists(project_directory):
                 project_data = json.loads(read(project_directory + "\\info.json"))
                 project_data["id"] = i
-                if(search == "" or search in project_data["tags"]):
+                if(search == "" or (search in project_data["tags"])):
                     all_projects_list.append(project_data)
         return all_projects_list
     def save(self):
@@ -88,7 +116,43 @@ class Project:
         project_data["id"] = self.id
         return project_data
                 
+class Task:
+    def __init__(self, project_id, name, date=""):
+        self.project_id = project_id
+        self.name = name
+        self.date = date
+        self.saved = False
+    def get_all(search = ""):
+        all_tasks_list = []
+        last_project_id = System.get_data()["last_project_id"]
+        for i in range(1, last_project_id+1):
+            project_directory = program_path + "\\data\\" + System.formatid(i)
+            if os.path.exists(project_directory):
+                project_data = json.loads(read(project_directory + "\\info.json"))
+                project_data["id"] = i
+                for task in project_data["tasks"]:
+                    if(search == "" or search in task["name"]):
+                        all_tasks_list.append(task)
+            return all_tasks_list
+    def save(self):
+        project = Project("")
+        project.find(self.project_id)
+        if(not self.saved):
+            self.id = System.get_data()["last_task_id"] + 1
+            project["tasks"].append(json.dumps({"id": self.id, "name": self.name, "date": self.date}))
+        
+        #write(self.directory+"\\info.json", json.dumps({ "name": self.name, "tasks": self.tasks, "tags": self.tags }))
 
+        if(self.saved == True):
+            for task in project["tasks"]:
+                if(task["id"] == self.id):
+                    task["name"] = self.name
+                    task["date"] = self.date
+        
+        project.save()
+
+        if(not self.saved):
+            System.update_data("last_project_id", self.id)
 
 def check_directory(directory):
     if not os.path.exists(directory):
@@ -112,8 +176,12 @@ def write(directory, a):
     f.close()
 
 # Check files
+System.fix_project(1)
 check_directory(program_path + "\\data")
 add_file(program_path + "\\data\\data.json", { "last_project_id": 0, "last_task_id": 0 })
+
+for project in Project.get_all():
+    System.fix_project(project["id"])
 
 #Data from files
 data = json.loads(read(program_path + "\\data\\data.json"))
@@ -145,18 +213,22 @@ elif sys.argv[1] == "add_task":
     task_project_id = sys.argv[2]
     task_name = sys.argv[3]
     task_date = sys.argv[4]
-    project_directory = program_path + "\\data\\" + System.formatid(int(task_project_id))
-    project_data = json.loads(read(project_directory + "\\info.json"))
-    try:
-        project_data["tasks"].append({"id": data["last_task_id"]+1, "name": task_name, "date": task_date})
-    except:
-        project_data.append({"tasks": []})
-        print("Dodano")
-        project_data["tasks"].append({"id": data["last_task_id"]+1, "name": task_name, "date": task_date})
-    write(project_directory + "\\info.json", json.dumps(project_data))
-    data["last_task_id"]+=1
 
-    write(program_path + "\\data\\data.json", json.dumps(data))
+    task = Task(task_project_id, task_name, task_date)
+    task.save()
+
+    #project_directory = program_path + "\\data\\" + System.formatid(int(task_project_id))
+    #project_data = json.loads(read(project_directory + "\\info.json"))
+    #try:
+    #    project_data["tasks"].append({"id": data["last_task_id"]+1, "name": task_name, "date": task_date})
+    #except:
+    #    project_data.append({"tasks": []})
+    #    print("Dodano")
+    #    project_data["tasks"].append({"id": data["last_task_id"]+1, "name": task_name, "date": task_date})
+    #write(project_directory + "\\info.json", json.dumps(project_data))
+    #data["last_task_id"]+=1
+
+    #write(program_path + "\\data\\data.json", json.dumps(data))
     print("Dodano zadanie")
 elif sys.argv[1] == "all_tasks_list":
     for i in range(1, data["last_project_id"]+1):
