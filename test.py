@@ -3,7 +3,7 @@ import os
 import json
 from datetime import datetime
 
-program_path = "C:\\Users\\Szymon\\Desktop\\WayApp_konsola"
+program_path = "C:\\Users\\SzymonPC\\Documents\\!Repozytoria\\WayApp_konsola"
 
 class System:
     #tests
@@ -43,6 +43,12 @@ class System:
             os.makedirs(directory)
 
     #fix
+    def check_data_files():
+        if not os.path.exists(program_path):
+            print("Błąd ścieżki programu")
+            sys.exit("Error")
+        System.check_directory(program_path + "\\data")
+        add_file(program_path + "\\data\\data.json", { "last_project_id": 0, "last_task_id": 0 })
     def fix_project(id):
         if not os.path.exists(program_path):
             print("Błąd ścieżki programu")
@@ -112,7 +118,7 @@ class Project:
         self.tags.remove(tag_name)
         self.save()
     def get_project(self):
-        project_data = json.loads(read(project_directory + "/info.json"))
+        project_data = json.loads(read(self.directory + "/info.json"))
         project_data["id"] = self.id
         return project_data
                 
@@ -122,24 +128,38 @@ class Task:
         self.name = name
         self.date = date
         self.saved = False
+    def project_tasks(project_id):
+        project = Project("")
+        project.find(project_id)
+        return project.tasks
     def get_all(search = ""):
         all_tasks_list = []
         last_project_id = System.get_data()["last_project_id"]
         for i in range(1, last_project_id+1):
-            project_directory = program_path + "\\data\\" + System.formatid(i)
-            if os.path.exists(project_directory):
-                project_data = json.loads(read(project_directory + "\\info.json"))
-                project_data["id"] = i
-                for task in project_data["tasks"]:
-                    if(search == "" or search in task["name"]):
-                        all_tasks_list.append(task)
-            return all_tasks_list
+            project = Project("")
+            project.find(i)
+            project.id = i
+            for task in project.tasks:
+                task["project_id"] = i
+                if(search == "" or search in task["name"]):
+                    all_tasks_list.append(task)
+            
+            #project_directory = program_path + "\\data\\" + System.formatid(i)
+            #if os.path.exists(project_directory):
+            #    project_data = json.loads(read(project_directory + "\\info.json"))
+            #    project_data["id"] = i
+            #    for task in project_data["tasks"]:
+            #        task["project_id"] = i
+            #        if(search == "" or search in task["name"]):
+            #            all_tasks_list.append(task)
+            
+        return all_tasks_list
     def save(self):
         project = Project("")
         project.find(self.project_id)
         if(not self.saved):
             self.id = System.get_data()["last_task_id"] + 1
-            project["tasks"].append(json.dumps({"id": self.id, "name": self.name, "date": self.date}))
+            project.tasks.append({"id": self.id, "name": self.name, "date": self.date})
         
         #write(self.directory+"\\info.json", json.dumps({ "name": self.name, "tasks": self.tasks, "tags": self.tags }))
 
@@ -152,11 +172,7 @@ class Task:
         project.save()
 
         if(not self.saved):
-            System.update_data("last_project_id", self.id)
-
-def check_directory(directory):
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+            System.update_data("last_task_id", self.id)
 
 def add_file(directory, o):
     if not os.path.isfile(directory):
@@ -176,10 +192,7 @@ def write(directory, a):
     f.close()
 
 # Check files
-System.fix_project(1)
-check_directory(program_path + "\\data")
-add_file(program_path + "\\data\\data.json", { "last_project_id": 0, "last_task_id": 0 })
-
+System.check_data_files()
 for project in Project.get_all():
     System.fix_project(project["id"])
 
@@ -231,35 +244,39 @@ elif sys.argv[1] == "add_task":
     #write(program_path + "\\data\\data.json", json.dumps(data))
     print("Dodano zadanie")
 elif sys.argv[1] == "all_tasks_list":
-    for i in range(1, data["last_project_id"]+1):
-        project_directory = program_path + "\\data\\" + System.formatid(i)
-        project_id = System.formatid(i)
-        if os.path.exists(project_directory):
-            try:
-                project_data = json.loads(read(project_directory + "\\info.json"))
-                test = project_data["tasks"]
-            except:
-                project_data = json.loads(read(project_directory + "\\info.json"))
-                project_data["tasks"] = []
-                write(project_directory + "\\info.json", json.dumps(project_data))
-            for task in project_data["tasks"]:
-                try:
-                    task_date = task["date"]
-                except:
-                    task_date = "brak daty"
-                print(task["name"] + chr(9) +  "  (" + project_data["name"] + ", " + task_date + ")")
+    all_tasks = Task.get_all()
+    for task in all_tasks:
+        try:
+            task_date = task["date"]
+        except:
+            task_date = "brak daty"
+        project = Project("")
+        project.find(int(task["project_id"]))
+        print(task["name"] + chr(9)+ "  (" +project.name + ", " + task_date + ")")
+
+    #for i in range(1, data["last_project_id"]+1):
+    #    project_directory = program_path + "\\data\\" + System.formatid(i)
+    #    project_id = System.formatid(i)
+    #    if os.path.exists(project_directory):
+    #        try:
+    #            project_data = json.loads(read(project_directory + "\\info.json"))
+    #            test = project_data["tasks"]
+    #        except:
+    #            project_data = json.loads(read(project_directory + "\\info.json"))
+    #            project_data["tasks"] = []
+    #            write(project_directory + "\\info.json", json.dumps(project_data))
+    #        for task in project_data["tasks"]:
+    #            try:
+    #                task_date = task["date"]
+    #            except:
+    #                task_date = "brak daty"
+    #            print(task["name"] + chr(9) +  "  (" + project_data["name"] + ", " + task_date + ")")
             
 elif sys.argv[1] == "task_list":
     project_id = sys.argv[2]
-    project_directory = program_path + "\\data\\" + System.formatid(int(project_id))
-    try:
-        if os.path.exists(project_directory):
-            project_data = json.loads(read(project_directory + "\\info.json"))
-            print("Zadania projektu " + project_data["name"])
-            for task in project_data["tasks"]:
-                print(str(task["id"]) + " " + task["name"])
-    except:
-        print("BRAK ZADAŃ")
+    tasks = Task.project_tasks(project_id)
+    for task in tasks:
+        print(str(task["id"]) + " " + task["name"] + " (" + task["date"] + ")" )
 elif sys.argv[1] == "show_project":
     project = Project("")
     project.find(int(sys.argv[2]))
