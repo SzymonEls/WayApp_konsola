@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 
 program_path = "C:\\Users\\SzymonPC\\Documents\\!Repozytoria\\WayApp_konsola"
+communication_mode = "text"
 
 class System:
     #tests
@@ -74,7 +75,21 @@ class System:
                 project_data[element] = default_values[element]
                 write(project_directory + "\\info.json", json.dumps(project_data))
 
-        
+class Communication:
+    def print(title, list=[], levels=2):
+        if (communication_mode == "json"):
+            print(json.dumps({"title": title, "list": list}))
+        else:
+            print(title)
+            for element in list:
+                line = ""
+                if(levels == 2):
+                    for element2 in element:
+                        line += element2 + " "
+                else:
+                    line = element + " "
+                line = line[:-1]
+                print(line)
 
 class Project:
     def __init__(self, name):
@@ -202,26 +217,38 @@ data = json.loads(read(program_path + "\\data\\data.json"))
 #Commands
 
 if len(sys.argv) < 2:
-    print("Dostępne komendy: ")
-    print("list")
-    print("new_project nazwa")
-    print("add_task projekt zadanie")
-    print("all_tasks_list")
-    print("task_list projekt")
-    print("show_project projekt")
-    print("add_tag projekt tag")
-    print("delete_tag projekt tag")
-    print("search_in_projects projektid tag")
-    print("open_project projektid")
+    commands_list = ["list",
+                     "new_project nazwa",
+                     "add_task projekt zadanie",
+                     "all_tasks_list",
+                     "task_list projekt",
+                     "show_project projekt",
+                     "add_tag projekt tag",
+                     "delete_tag projekt tag",
+                     "search_in_projects projektid tag",
+                     "open_project projektid"]
+    Communication.print("Komendy", commands_list, 1)
+    #print("Dostępne komendy: ")
+    #print("list")
+    #print("new_project nazwa")
+    #print("add_task projekt zadanie")
+    #print("all_tasks_list")
+    #print("task_list projekt")
+    #print("show_project projekt")
+    #print("add_tag projekt tag")
+    #print("delete_tag projekt tag")
+    #print("search_in_projects projektid tag")
+    #print("open_project projektid")
 elif sys.argv[1] == "list": #list of projects
-    print("lista projektów: ")
+    print_text = []
     all_projects_list = Project.get_all()
     for project in all_projects_list:
-        print(System.formatid(project["id"]) + chr(9)+project["name"])
+        print_text.append([System.formatid(project["id"]), project["name"]])
+    Communication.print("Projects:", print_text, 2)
 elif sys.argv[1] == "new_project": #new project
     project = Project(sys.argv[2])
     project.save()
-    print("Created project "+project.name)
+    Communication.print("Created project " + project.name, [], 1)
 elif sys.argv[1] == "add_task":
     task_project_id = sys.argv[2]
     task_name = sys.argv[3]
@@ -242,8 +269,9 @@ elif sys.argv[1] == "add_task":
     #data["last_task_id"]+=1
 
     #write(program_path + "\\data\\data.json", json.dumps(data))
-    print("Dodano zadanie")
+    Communication.print("Dodano zadanie", [], 1)
 elif sys.argv[1] == "all_tasks_list":
+    print_text = []
     all_tasks = Task.get_all()
     for task in all_tasks:
         try:
@@ -252,7 +280,8 @@ elif sys.argv[1] == "all_tasks_list":
             task_date = "brak daty"
         project = Project("")
         project.find(int(task["project_id"]))
-        print(task["name"] + chr(9)+ "  (" +project.name + ", " + task_date + ")")
+        print_text.append([task["name"], "  (" +project.name + ", " + task_date + ")"])
+        #print(task["name"] + chr(9)+ "  (" +project.name + ", " + task_date + ")")
 
     #for i in range(1, data["last_project_id"]+1):
     #    project_directory = program_path + "\\data\\" + System.formatid(i)
@@ -271,33 +300,40 @@ elif sys.argv[1] == "all_tasks_list":
     #            except:
     #                task_date = "brak daty"
     #            print(task["name"] + chr(9) +  "  (" + project_data["name"] + ", " + task_date + ")")
+    Communication.print("All tasks list:", print_text, 2)
             
 elif sys.argv[1] == "task_list":
+    print_text = []
     project_id = sys.argv[2]
     tasks = Task.project_tasks(project_id)
     for task in tasks:
-        print(str(task["id"]) + " " + task["name"] + " (" + task["date"] + ")" )
+        print_text.append([str(task["id"]), task["name"], " (" + task["date"] + ")"])
+    Communication.print("Tasks " + str(project_id), print_text, 2)
 elif sys.argv[1] == "show_project":
+    print_text = []
     project = Project("")
     project.find(int(sys.argv[2]))
-    print("name " + project.name)
-    print("tasks " + str(project.tasks))
-    print("tags " + str(project.tags))
-    print("id " + str(project.id))
+    print_text.append(["name:", project.name])
+    print_text.append(["tasks:", str(project.tasks)])
+    print_text.append(["tags:", str(project.tags)])
+    print_text.append(["id:", str(project.id)])
+    Communication.print("Show project", print_text, 2)
 elif sys.argv[1] == "add_tag":
     project = Project("")
     project.find(int(sys.argv[2]))
     project.add_tag(sys.argv[3])
-    print("Tag added successfully!")
+    Communication.print("Tag added successfully!", [], 1)
 elif sys.argv[1] == "delete_tag":
     project = Project("")
     project.find(int(sys.argv[2]))
     project.delete_tag(sys.argv[3])
-    print("Tag " + sys.argv[3] + " deleted.")
+    Communication.print("Tag " + sys.argv[3] + " deleted.", [], 1)
 elif sys.argv[1] == "search_in_projects":
+    print_text = []
     all_projects_list = Project.get_all(sys.argv[2])
     for project in all_projects_list:
-        print(System.formatid(project["id"]) + chr(9)+project["name"])
+        print_text.append([System.formatid(project["id"]), project["name"]])
+    Communication.print("Searching results", print_text, 2)
 elif sys.argv[1] == "open_project":
     path = program_path +  "\\data\\" + System.formatid(int(sys.argv[2]))
     os.startfile(path)
