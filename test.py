@@ -7,28 +7,12 @@ program_path = "/home/se/Dokumenty/WayApp_konsola"
 communication_mode = "text"
 path_character="/"
 
+data_path = "{character}data{character}".format(character=path_character) #format /data/
+
 class System:
     #tests
     def test():
         print("test")
-
-    #data.json
-    def get_data():
-        file = open(program_path + "{character}data{character}data.json".format(character=path_character), "r")
-        file_text = file.read()
-        file.close()
-        data_json = json.loads(file_text)
-        return data_json
-    def update_data(data_type, value):
-        system_data = System.get_data()
-        system_data[data_type] = value
-        file = open(program_path + "{character}data{character}data.json".format(character=path_character), "w")
-        file.write(json.dumps(system_data))
-        file.close()
-
-    #file format
-    def formatid(number):
-        return str("{:03d}".format(number))
     
     #files
     def write_file(directory, text):
@@ -44,7 +28,21 @@ class System:
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-    #fix
+    #data.json
+    def get_data():
+        file_text = System.read_file(program_path + data_path+"data.json")
+        data_json = json.loads(file_text)
+        return data_json
+    def update_data(data_type, value):
+        system_data = System.get_data()
+        system_data[data_type] = value
+        wirte_file(program_path + data_path+"data.json", json.dumps(system_data))
+
+    #format id number
+    def formatid(number):
+        return str("{:03d}".format(number))
+
+    #fix files
     def check_data_files():
         if not os.path.exists(program_path):
             print("Błąd ścieżki programu1")
@@ -55,7 +53,7 @@ class System:
         if not os.path.exists(program_path):
             print("Błąd ścieżki programu")
         
-        project_directory = program_path + "{character}data{character}".format(character=path_character) + System.formatid(int(id))
+        project_directory = program_path + data_path + System.formatid(int(id))
 
         project_default = json.dumps({ "name": "Project", "tasks": [], "tags": [] })
         default_values = {"name": "", "tasks": [], "tags": []}
@@ -340,4 +338,8 @@ elif sys.argv[1] == "open_project":
     try:
         os.startfile(path)
     except:
+<<<<<<< HEAD
         os.system("open " + path)
+=======
+        os.system("open " + path)
+>>>>>>> 55d04cf6db42c56b4649154034868bc7cc9e5864
